@@ -5,6 +5,8 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 require('dotenv').config();
 
+const { executeCode } = require('./execute'); // ✅ NEW LINE ADDED
+
 const app = express();
 const server = http.createServer(app);
 
@@ -39,6 +41,20 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ✅ CODE EXECUTION ROUTE - NEW
+app.post('/execute', async (req, res) => {
+  const { language, code, stdin } = req.body;
+  if (!language || !code) {
+    return res.status(400).json({ error: 'language and code are required' });
+  }
+  try {
+    const result = await executeCode(language, code, stdin || '');
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Socket.io connection handler
 io.on('connection', (socket) => {
   console.log('✅ User connected:', socket.id);
@@ -47,19 +63,15 @@ io.on('connection', (socket) => {
   socket.on('join-room', ({ roomId, userId, username }) => {
     socket.join(roomId);
     
-    // Initialize room if it doesn't exist
     if (!rooms.has(roomId)) {
       rooms.set(roomId, { users: [] });
     }
     
-    // Add user to room
     const room = rooms.get(roomId);
     room.users.push({ userId, username, socketId: socket.id });
     
-    // Notify others that user joined
     socket.to(roomId).emit('user-joined', { userId, username });
     
-    // Send active users list to all in room
     const usernames = room.users.map(u => u.username);
     io.to(roomId).emit('active-users', { users: usernames });
     
@@ -68,13 +80,11 @@ io.on('connection', (socket) => {
 
   // Handle code changes
   socket.on('code-change', ({ roomId, code }) => {
-    // Broadcast code change to all other users in the room
     socket.to(roomId).emit('code-update', { code, userId: socket.id });
   });
 
   // Handle chat messages
   socket.on('send-message', ({ roomId, message, username }) => {
-    // Broadcast message to all users in the room (including sender)
     io.to(roomId).emit('new-message', { message, userId: socket.id, username });
   });
 
@@ -82,23 +92,19 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('❌ User disconnected:', socket.id);
     
-    // Remove user from all rooms
     rooms.forEach((room, roomId) => {
       const userIndex = room.users.findIndex(u => u.socketId === socket.id);
       if (userIndex !== -1) {
         const user = room.users[userIndex];
         room.users.splice(userIndex, 1);
         
-        // Notify others that user left
         socket.to(roomId).emit('user-left', { userId: user.userId, username: user.username });
         
-        // Update active users list
         const usernames = room.users.map(u => u.username);
         io.to(roomId).emit('active-users', { users: usernames });
         
         console.log(`👋 ${user.username} left room: ${roomId}`);
         
-        // Remove room if empty
         if (room.users.length === 0) {
           rooms.delete(roomId);
         }

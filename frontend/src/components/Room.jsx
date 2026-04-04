@@ -1,75 +1,143 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import CodeEditor from "./CodeEditor";
 
-const socket = io("http://localhost:5000");
-
 export default function Room() {
   const { roomId } = useParams();
+  const socketRef = useRef(null);
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [username] = useState("User" + Math.floor(Math.random() * 100));
 
   useEffect(() => {
-    socket.emit("join-room", { roomId, username });
-    socket.on("users-update", (userList) => setUsers(userList));
-    socket.on("chat-message", (msg) => setMessages((prev) => [...prev, msg]));
-    return () => socket.disconnect();
-  }, [roomId]);
+    if (!socketRef.current) {
+      socketRef.current = io("http://localhost:5000", {
+        transports: ["websocket"],
+      });
+
+      socketRef.current.emit("join-room", { roomId, username });
+
+      // Try both event name variants (backend may use either)
+      socketRef.current.on("active-users", (data) => {
+        setUsers(Array.isArray(data) ? data : data.users || []);
+      });
+      socketRef.current.on("users-update", (data) => {
+        setUsers(Array.isArray(data) ? data : data.users || []);
+      });
+
+      socketRef.current.on("new-message", (msg) => setMessages((prev) => [...prev, msg]));
+      socketRef.current.on("chat-message", (msg) => setMessages((prev) => [...prev, msg]));
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [roomId, username]);
 
   const sendMessage = () => {
-    if (!chatInput.trim()) return;
-    socket.emit("chat-message", { roomId, username, message: chatInput });
+    if (!chatInput.trim() || !socketRef.current) return;
+    socketRef.current.emit("send-message", { roomId, username, message: chatInput });
     setChatInput("");
   };
 
   return (
-    // ✅ Full screen, column layout
-    <div className="flex flex-col h-screen bg-gray-900 text-white">
-
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      height: "100vh",
+      width: "100vw",
+      backgroundColor: "#0d1117",
+      color: "#c9d1d9",
+      fontFamily: "sans-serif",
+      overflow: "hidden",
+    }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700 shrink-0">
-        <h1 className="font-bold text-lg">CodeCollab — Room: {roomId}</h1>
-        <span className="text-sm text-green-400">{users.length} online</span>
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "8px 16px",
+        backgroundColor: "#161b22",
+        borderBottom: "1px solid #30363d",
+        flexShrink: 0,
+      }}>
+        <h1 style={{ margin: 0, fontSize: "16px", fontWeight: "bold" }}>
+          CodeCollab — Room: {roomId}
+        </h1>
+        <span style={{ color: "#3fb950", fontSize: "13px" }}>
+          {users.length} online
+        </span>
       </div>
 
-      {/* ✅ Main area: flex-1 so it fills remaining height, overflow-hidden to contain children */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Main area */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
-        {/* ✅ Editor: h-full is THE critical fix */}
-        <div className="w-[70%] h-full">
-          <CodeEditor socket={socket} roomId={roomId} />
+        {/* Editor — THE KEY FIX: explicit pixel height via flex */}
+        <div style={{ flex: 1, minWidth: 0, height: "100%" }}>
+          <CodeEditor socket={socketRef.current} roomId={roomId} />
         </div>
 
         {/* Sidebar */}
-        <div className="w-[30%] flex flex-col border-l border-gray-700 overflow-hidden">
+        <div style={{
+          width: "300px",
+          flexShrink: 0,
+          display: "flex",
+          flexDirection: "column",
+          borderLeft: "1px solid #30363d",
+          backgroundColor: "#161b22",
+          overflow: "hidden",
+        }}>
           {/* Users */}
-          <div className="p-3 border-b border-gray-700 shrink-0">
-            <p className="text-xs text-gray-400 uppercase mb-2">Online</p>
+          <div style={{
+            padding: "12px",
+            borderBottom: "1px solid #30363d",
+            flexShrink: 0,
+          }}>
+            <p style={{ margin: "0 0 8px 0", fontSize: "11px", color: "#8b949e", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              Online
+            </p>
             {users.map((u, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm py-1">
-                <span className="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
-                {u}
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", padding: "3px 0" }}>
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: "#3fb950", display: "inline-block" }}></span>
+                {typeof u === "string" ? u : u.username || u.name || JSON.stringify(u)}
               </div>
             ))}
           </div>
 
           {/* Chat messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px" }}>
             {messages.map((m, i) => (
-              <div key={i} className="text-sm">
-                <span className="text-blue-400 font-medium">{m.username}: </span>
-                <span className="text-gray-300">{m.message}</span>
+              <div key={i} style={{ fontSize: "13px", marginBottom: "8px" }}>
+                <span style={{ color: "#58a6ff", fontWeight: "600" }}>{m.username}: </span>
+                <span style={{ color: "#c9d1d9" }}>{m.message}</span>
               </div>
             ))}
           </div>
 
           {/* Chat input */}
-          <div className="p-3 border-t border-gray-700 flex gap-2 shrink-0">
+          <div style={{
+            padding: "12px",
+            borderTop: "1px solid #30363d",
+            display: "flex",
+            gap: "8px",
+            flexShrink: 0,
+          }}>
             <input
-              className="flex-1 bg-gray-700 rounded px-2 py-1 text-sm outline-none"
+              style={{
+                flex: 1,
+                backgroundColor: "#21262d",
+                border: "1px solid #30363d",
+                borderRadius: "6px",
+                padding: "6px 10px",
+                fontSize: "13px",
+                color: "#c9d1d9",
+                outline: "none",
+              }}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
@@ -77,7 +145,15 @@ export default function Room() {
             />
             <button
               onClick={sendMessage}
-              className="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm"
+              style={{
+                backgroundColor: "#238636",
+                border: "none",
+                borderRadius: "6px",
+                padding: "6px 14px",
+                fontSize: "13px",
+                color: "white",
+                cursor: "pointer",
+              }}
             >
               Send
             </button>
