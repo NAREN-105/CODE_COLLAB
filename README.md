@@ -1,5 +1,6 @@
 # 🚀 CodeCollab - Real-time Collaborative Code Editor
 
+
 A modern, real-time collaborative coding platform built with React, Node.js, and Socket.IO. Code together, chat together, build together.
 
 ![CodeCollab Banner](https://img.shields.io/badge/CodeCollab-v1.0-blue?style=for-the-badge)
