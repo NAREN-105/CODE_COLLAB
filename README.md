@@ -484,7 +484,6 @@ If you find CodeCollab useful, please consider:
 ---
 
 <div align="center">
-
 **Built with ❤️ by developers, for developers**
 
 [⬆ Back to Top](#-codecollab---real-time-collaborative-code-editor)
