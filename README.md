@@ -43,7 +43,6 @@ A modern, real-time collaborative coding platform built with React, Node.js, and
 ---
 
 ## 🚀 Quick Start
-
 ### Prerequisites
 
 Before you begin, ensure you have installed:
