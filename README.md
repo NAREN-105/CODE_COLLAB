@@ -56,8 +56,8 @@ node --version  # Should be v16+
 npm --version   # Should be 7+
 ```
 
----
 
+---
 ### 📦 Installation
 
 #### 1. Clone the Repository
