@@ -107,6 +107,7 @@ You should see:
 ╚════════════════════════════════════════╝
 ```
 
+
 #### Terminal 2 - Frontend Development Server
 ```bash
 cd frontend
@@ -228,8 +229,8 @@ export default {
 }
 ```
 
----
 
+---
 ## 🌐 Socket.IO Events
 
 ### Client → Server Events
