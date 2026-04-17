@@ -217,6 +217,7 @@ CLIENT_URL=http://localhost:5173
 MAX_USERS_PER_ROOM=50
 ```
 
+
 ### Frontend Configuration
 
 `frontend/vite.config.js`:
