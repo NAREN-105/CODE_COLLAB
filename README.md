@@ -231,8 +231,6 @@ export default {
 }
 ```
 
-
-
 ---
 ## 🌐 Socket.IO Events
 
