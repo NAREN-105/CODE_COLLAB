@@ -8,7 +8,6 @@ A modern, real-time collaborative coding platform built with React, Node.js, and
 ![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen?style=for-the-badge)
 
 
-
 ---
 
 ## ✨ Features
