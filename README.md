@@ -40,7 +40,6 @@ A modern, real-time collaborative coding platform built with React, Node.js, and
 - **Socket.IO** - WebSocket server
 - **CORS** - Cross-origin resource sharing
 - **dotenv** - Environment configuration
-
 ---
 
 ## 🚀 Quick Start
