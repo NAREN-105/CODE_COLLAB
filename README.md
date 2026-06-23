@@ -7,7 +7,6 @@ A modern, real-time collaborative coding platform built with React, Node.js, and
 ![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 ![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen?style=for-the-badge)
 
-
 ---
 
 ## ✨ Features
